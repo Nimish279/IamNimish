@@ -1,0 +1,72 @@
+<svg width="100" height="100" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">Inventory &amp; Billing Software</svg>
+<svg width="100" height="100" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">Employee Management</svg>
+
+<?php
+
+$name = $_POST['name'];
+$email = $_POST['email'];
+$message = $_POST['message'];
+
+// ✅ Send to different Gmail to avoid Gmail loopback blocking
+$to = "nimish.joshi2002@gmail.com.com";
+$subject = "New Contact Form Message from $name";
+
+$body = "From: $name\n";
+$body .= "Email: $email\n\n";
+$body .= "Message:\n$message\n";
+
+$host = "smtp.gmail.com";
+$username = "nimish.joshi2002@gmail.com";  // Your Gmail
+$password = "monqyayhjdhceuxe";            // App password
+$port = 587;
+
+$context = stream_context_create([
+    "ssl" => [
+        "verify_peer" => false,
+        "verify_peer_name" => false,
+        "allow_self_signed" => true
+    ]
+]);
+
+$smtp = stream_socket_client(
+    "tcp://$host:$port",
+    $errno,
+    $errstr,
+    30,
+    STREAM_CLIENT_CONNECT,
+    $context
+);
+
+if (!$smtp) {
+    echo "SMTP connect failed: $errstr ($errno)";
+    exit;
+}
+
+fwrite($smtp, "EHLO localhost\r\n");
+fwrite($smtp, "STARTTLS\r\n");
+fwrite($smtp, "EHLO localhost\r\n");
+
+// ✅ FIXED TYPO HERE
+fwrite($smtp, "AUTH LOGIN\r\n");
+fwrite($smtp, base64_encode($username)."\r\n");
+fwrite($smtp, base64_encode($password)."\r\n");
+
+fwrite($smtp, "MAIL FROM:<$username>\r\n");
+fwrite($smtp, "RCPT TO:<$to>\r\n");
+fwrite($smtp, "DATA\r\n");
+
+// ✅ Gmail-safe headers
+fwrite($smtp, "Subject: $subject\r\n");
+fwrite($smtp, "From: Nimish <nimish.joshi2002@gmail.com>\r\n");
+fwrite($smtp, "Reply-To: $email\r\n");
+fwrite($smtp, "MIME-Version: 1.0\r\n");
+fwrite($smtp, "Content-Type: text/plain; charset=UTF-8\r\n\r\n");
+
+fwrite($smtp, "$body\r\n.\r\n");
+
+fwrite($smtp, "QUIT\r\n");
+
+fclose($smtp);
+
+echo "OK";
+?>
